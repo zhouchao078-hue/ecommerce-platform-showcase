@@ -624,23 +624,6 @@ Compose 文件位于 `ecommerce-platform/deploy/`，必须显式指定：
 docker compose -f deploy/docker-compose.yml up -d
 ```
 
-### 3306 端口被占用
-
-项目默认连接本机 `127.0.0.1:3306`。先检查：
-
-```powershell
-Get-NetTCPConnection -LocalPort 3306
-```
-
-如果 MySQL 已经在运行，不需要再启动 MySQL 容器。
-
-### `vite` 不是可执行命令
-
-```powershell
-cd ecommerce-frontend
-npm ci
-npm run dev
-```
 
 ### 前端请求返回连接失败
 
@@ -663,15 +646,6 @@ mvn -B -DskipTests clean package
 ```
 
 然后执行服务镜像构建。
-
-## 开发约定
-
-- Controller 只处理请求、参数校验和响应。
-- 业务逻辑放在 ServiceImpl。
-- Controller 不直接使用 `SecurityContextHolder`，通过认证服务获取当前用户。
-- 资金、库存、订单状态变更必须考虑幂等、事务和并发。
-- 提交前至少运行后端测试和前端构建。
-- 不提交 `.env`、真实密钥、构建产物和本地测试日志。
 
 ## 当前限制
 
