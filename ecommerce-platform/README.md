@@ -3,7 +3,7 @@
 Java 17 + Spring Boot 3.3 多模块后端。当前包含商城、订单、售后、秒杀、智能体、工单客服、Gateway、消息分发和监控能力。
 
 完整项目说明、前端与 Python Agent 启动方式见
-[根仓库 README](https://github.com/your-account/ecommerce-platform/blob/main/README.md)。
+[根仓库 README](https://github.com/zhouchao078-hue/ecommerce-platform-showcase/blob/main/README.md)。
 
 ## 运行服务
 
@@ -117,7 +117,7 @@ gateway/src/main/resources/application.yml
 ```
 
 本地真实密钥只放在项目根目录 `.env`。模板见根仓库
-[.env.example](https://github.com/your-account/ecommerce-platform/blob/main/.env.example)。
+[.env.example](https://github.com/zhouchao078-hue/ecommerce-platform-showcase/blob/main/.env.example)。
 
 ## 接口响应
 

@@ -80,7 +80,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 jwt:
-  secret: ${JWT_SECRET:ZGVtby1vbmx5LWp3dC1zZWNyZXQtY2hhbmdlLW1l}
+  secret: ${JWT_SECRET:ZGVtby1vbmx5LWp3dC1zZWNyZXQta2V5LTI1Ni1iaXRzLW1pbmltdW0tbG9uZw==}
   access-token-expiration: 1800000
   refresh-token-expiration: 604800000
 

@@ -1,6 +1,6 @@
 # E-Commerce Platform
 
-[![CI/CD Pipeline](https://github.com/your-account/ecommerce-platform/actions/workflows/pipeline.yml/badge.svg)](https://github.com/your-account/ecommerce-platform/actions/workflows/pipeline.yml)
+[![CI/CD Pipeline](https://github.com/zhouchao078-hue/ecommerce-platform-showcase/actions/workflows/pipeline.yml/badge.svg)](https://github.com/zhouchao078-hue/ecommerce-platform-showcase/actions/workflows/pipeline.yml)
 
 一个面向学习、演示和二次开发的电商平台项目，覆盖用户商城、商家经营、订单交易、售后、秒杀、智能客服、多智能体协作、可观测性和渐进式微服务部署。
 
@@ -145,7 +145,7 @@ ecommerce-project/
 │   └── ticket-agent.openapi.yaml
 ├── customer-ticket-copilot/       # Python CrewAI 工单 Agent
 ├── ecommerce-frontend/            # Vue 3 前端
-└── ecommerce-platform/            # Java 后端 Git submodule
+└── ecommerce-platform/            # Java 后端
     ├── gateway/                   # Gateway :8080
     ├── platform-app/              # commerce-service :8081
     ├── platform-config/           # 公共服务配置
@@ -165,17 +165,11 @@ ecommerce-project/
         └── start-local-services.ps1
 ```
 
-后端位于 Git submodule 中。克隆项目时需要初始化 submodule：
+后端代码直接包含在展示仓库中。克隆后即可进入项目目录：
 
 ```powershell
-git clone --recurse-submodules https://github.com/your-account/ecommerce-platform.git
-cd ecommerce-project
-```
-
-已经克隆但目录为空时：
-
-```powershell
-git submodule update --init --recursive
+git clone https://github.com/zhouchao078-hue/ecommerce-platform-showcase.git
+cd ecommerce-platform-showcase
 ```
 
 ## 环境要求
@@ -561,7 +555,7 @@ Production Environment Secrets：
 
 生产服务器还需要：
 
-1. 已克隆根仓库和 submodule。
+1. 已克隆仓库。
 2. 已安装 Docker 和 Compose v2。
 3. 项目根目录已有正确的 `.env`。
 4. 如 GHCR 镜像是私有包，已执行过 `docker login ghcr.io`。
