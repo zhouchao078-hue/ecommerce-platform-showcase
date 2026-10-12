@@ -1,0 +1,63 @@
+/*
+ * Element Plus 主题桥接层
+ *
+ * 只做一件事：把 Element Plus 的变量指向 tokens.css 里的设计 token。
+ * 不要在页面里单独覆盖 --el-* 变量，改 tokens.css 就全局生效。
+ */
+:root {
+  /* 主色（唯一强调色）*/
+  --el-color-primary: var(--color-accent);
+  --el-color-primary-light-3: #e4a089;
+  --el-color-primary-light-5: #ecbbab;
+  --el-color-primary-light-7: #f4d6cd;
+  --el-color-primary-light-8: #f7e4dd;
+  --el-color-primary-light-9: #fbf1ee;
+  --el-color-primary-dark-2: var(--color-accent-dark);
+
+  /* 语义色 */
+  --el-color-success: var(--color-success);
+  --el-color-warning: var(--color-warning);
+  --el-color-danger: var(--color-error);
+  --el-color-error: var(--color-error);
+  --el-color-info: var(--color-text-secondary);
+
+  /* 背景 */
+  --el-bg-color: var(--color-bg-base);
+  --el-bg-color-page: var(--color-bg-base);
+  --el-bg-color-overlay: var(--color-bg-overlay);
+  --el-fill-color-blank: var(--color-bg-overlay);
+
+  /* 边框 */
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-border-subtle);
+  --el-border-color-lighter: var(--color-border-subtle);
+
+  /* 文字 */
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: var(--color-text-primary);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-text-color-placeholder: var(--color-text-muted);
+
+  /* 字体与圆角 */
+  --el-font-family: var(--font-body);
+  --el-border-radius-base: var(--radius-md);
+}
+
+/* ── 形状：统一到 demo 的 8px / 16px 体系，去掉原来的胶囊圆角 ── */
+.el-button { border-radius: var(--radius-md); }
+.el-input__wrapper { border-radius: var(--radius-md); }
+.el-textarea__inner { border-radius: var(--radius-md); }
+.el-select__wrapper { border-radius: var(--radius-md); }
+.el-dialog { border-radius: var(--radius-lg); }
+.el-drawer { border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
+.el-message { border-radius: var(--radius-md); }
+.el-message-box { border-radius: var(--radius-lg); }
+.el-card { border-radius: var(--radius-lg); }
+.el-tag { border-radius: var(--radius-sm); }
+
+/* 输入框聚焦用品牌色环，和设计规范一致 */
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--color-accent) inset,
+              0 0 0 3px var(--color-accent-dim);
+}

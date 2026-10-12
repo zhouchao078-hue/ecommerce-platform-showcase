@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: agent-service
+  config:
+    import:
+      - optional:classpath:application-common.yml
+      - optional:file:../../../.env[.properties]
+      - optional:file:../../.env[.properties]
+      - optional:file:.env[.properties]
+
+server:
+  port: ${AGENT_SERVICE_PORT:8082}
+
+management:
+  metrics:
+    tags:
+      application: agent-service
+
+agent:
+  execution:
+    global-concurrency: ${AGENT_GLOBAL_CONCURRENCY:32}
+    per-user-concurrency: ${AGENT_PER_USER_CONCURRENCY:2}
+    chat-queue-capacity: ${AGENT_CHAT_QUEUE_CAPACITY:100}
+    chat-timeout-seconds: ${AGENT_CHAT_TIMEOUT_SECONDS:120}
+    llm-concurrency: ${AGENT_LLM_CONCURRENCY:8}
+    llm-acquire-timeout-millis: ${AGENT_LLM_ACQUIRE_TIMEOUT_MILLIS:1000}
+    llm-timeout-seconds: ${AGENT_LLM_TIMEOUT_SECONDS:60}
+    llm-circuit-failure-rate-threshold: ${AGENT_LLM_CIRCUIT_FAILURE_RATE:50}
+    llm-circuit-sliding-window-size: ${AGENT_LLM_CIRCUIT_WINDOW_SIZE:20}
+    llm-circuit-minimum-calls: ${AGENT_LLM_CIRCUIT_MINIMUM_CALLS:10}
+    llm-circuit-open-seconds: ${AGENT_LLM_CIRCUIT_OPEN_SECONDS:30}
+    llm-circuit-half-open-calls: ${AGENT_LLM_CIRCUIT_HALF_OPEN_CALLS:3}
+    session-history-limit: ${AGENT_SESSION_HISTORY_LIMIT:20}
+    session-ttl-seconds: ${AGENT_SESSION_TTL_SECONDS:3600}
+    sse-scheduler-pool-size: ${AGENT_SSE_SCHEDULER_POOL_SIZE:4}
+    sse-heartbeat-millis: ${AGENT_SSE_HEARTBEAT_MILLIS:15000}
+    sse-timeout-seconds: ${AGENT_SSE_TIMEOUT_SECONDS:1800}
+  local:
+    model: qwen3:4b
+    endpoint: ${AGENT_LOCAL_ENDPOINT:http://localhost:11434/api/chat}
+  ticket:
+    enabled: true
+    model: ${AGENT_TICKET_MODEL:deepseek-chat}
+    prompt-version: ${AGENT_TICKET_PROMPT_VERSION:support-agent-v1}
+    base-url: ${AGENT_TICKET_BASE_URL:http://127.0.0.1:8000}
+    tenant-id: ecommerce
+    timeout-seconds: 45
+    max-concurrent-runs: 8
+    max-queued-runs: 100
+    max-active-runs-per-user: ${AGENT_TICKET_MAX_ACTIVE_RUNS_PER_USER:3}
+    active-run-ttl-seconds: ${AGENT_TICKET_ACTIVE_RUN_TTL_SECONDS:86400}
+    dispatch-mode: ${AGENT_TICKET_DISPATCH_MODE:local}
+    internal-token: ${INTERNAL_API_TOKEN:change-me}
+    rabbit-exchange: support.agent.exchange
+    rabbit-run-routing-key: ${RABBIT_RUN_ROUTING_KEY:agent.run.normal}
+    rabbit-cancel-routing-key: ${RABBIT_CANCEL_ROUTING_KEY:agent.cancel}
+    outbox-lease-seconds: ${AGENT_TICKET_OUTBOX_LEASE_SECONDS:60}
+    lease-recovery-interval-ms: ${AGENT_TICKET_LEASE_RECOVERY_INTERVAL_MS:15000}
+    lease-recovery-batch-size: ${AGENT_TICKET_LEASE_RECOVERY_BATCH_SIZE:20}
+    kafka-enabled: ${AGENT_TICKET_KAFKA_ENABLED:false}
+    kafka-run-topic: ${KAFKA_RUN_TOPIC:support.agent.run.events.v1}

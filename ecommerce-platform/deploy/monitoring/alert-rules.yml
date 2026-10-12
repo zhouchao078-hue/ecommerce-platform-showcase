@@ -1,0 +1,97 @@
+groups:
+  - name: ecommerce-agent-alerts
+    rules:
+      - alert: AgentLlmHighFailureRate
+        expr: |
+          sum(rate(agent_llm_calls_total{result="failure"}[5m]))
+          /
+          clamp_min(sum(rate(agent_llm_calls_total[5m])), 0.001)
+          > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM failure rate is above 20%"
+          description: "External model failures remained above 20% for 5 minutes."
+
+      - alert: AgentLlmHighLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, provider) (rate(agent_llm_duration_seconds_bucket[5m]))
+          ) > 8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM p95 latency is above 8 seconds"
+          description: "Provider {{ $labels.provider }} p95 latency exceeded 8 seconds."
+
+      - alert: AgentAdmissionRejected
+        expr: |
+          sum(increase(agent_execution_admission_total{result=~"limit_rejected|queue_rejected"}[5m]))
+          > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Agent admission backpressure is elevated"
+          description: "More than 10 requests were rejected by admission control in 5 minutes."
+
+      - alert: AgentExecutionTimeout
+        expr: |
+          sum(increase(agent_execution_duration_seconds_count{result="timeout"}[5m]))
+          > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Agent execution timeouts detected"
+          description: "More than 3 agent executions timed out in 5 minutes."
+
+      - alert: AgentQueueBacklog
+        expr: agent_execution_queue_size > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Agent queue backlog is high"
+          description: "Agent queue size has remained above 50 for 5 minutes."
+
+      - alert: TicketSseConnectionsHigh
+        expr: agent_sse_active_connections > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ticket SSE connection count is high"
+          description: "Active ticket-agent SSE connections exceeded 100."
+
+      - alert: TicketOutboxPublishFailures
+        expr: |
+          sum(increase(agent_ticket_outbox_publish_total{result=~"failure|claim_failure"}[5m]))
+          > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ticket outbox publish failures detected"
+          description: "Outbox publish or claim failures exceeded 5 in 5 minutes."
+
+      - alert: TicketRunQuotaRejected
+        expr: sum(increase(agent_ticket_run_quota_rejected_total[5m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ticket run quota rejections are elevated"
+          description: "More than 20 ticket runs were rejected by quota in 5 minutes."
+
+      - alert: DatabaseConnectionPoolPressure
+        expr: hikaricp_connections_pending > 5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Database connection pool is under pressure"
+          description: "More than 5 requests are waiting for a database connection."

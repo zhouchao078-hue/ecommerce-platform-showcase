@@ -1,0 +1,4 @@
+**/node_modules
+**/.git
+deploy/.runtime
+deploy/sql/seckill.sql

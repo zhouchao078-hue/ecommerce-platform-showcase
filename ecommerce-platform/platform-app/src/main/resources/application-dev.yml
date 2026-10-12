@@ -1,0 +1,8 @@
+server:
+  port: ${COMMERCE_SERVICE_PORT:8081}
+
+logging:
+  level:
+    com.ecommerce: DEBUG
+    org.springframework.security: DEBUG
+    com.ecommerce.**.mapper: DEBUG

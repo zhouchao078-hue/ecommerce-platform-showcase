@@ -1,0 +1,187 @@
+openapi: 3.0.3
+info:
+  title: Customer Ticket Copilot API
+  version: 1.0.0
+  description: |
+    Contract between the Java commerce platform and the Python CrewAI service.
+    Java owns identity, authorization, business state, and all write actions.
+    Python only analyzes evidence and returns typed proposals.
+servers:
+  - url: http://127.0.0.1:8000
+paths:
+  /health:
+    get:
+      operationId: health
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/v1/ticket-events:
+    post:
+      operationId: submitTicketEvent
+      description: Submit a ticket event for analysis and optional human review.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TicketEventRequest"
+      responses:
+        "200":
+          description: Ticket analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketAgentResponse"
+        "422":
+          description: Invalid request
+  /api/v1/tickets/{ticketId}:
+    get:
+      operationId: getTicket
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Latest ticket projection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TicketAgentResponse"
+        "404":
+          description: Ticket projection not found
+  /api/v1/agent-runs/{runId}/cancel:
+    post:
+      operationId: cancelAgentRun
+      description: Cooperatively mark a generation as cancelled.
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cancellation accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cancelled]
+                properties:
+                  cancelled:
+                    type: boolean
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, service, dry_run]
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: customer-ticket-copilot
+        dry_run:
+          type: boolean
+    TicketEventRequest:
+      type: object
+      required:
+        - tenant_id
+        - channel
+        - customer_id
+        - subject
+        - content
+      properties:
+        run_id:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: Java-owned AgentRun identifier used for cancellation correlation.
+        tenant_id:
+          type: string
+          maxLength: 64
+        channel:
+          type: string
+          maxLength: 32
+        event_id:
+          type: string
+          maxLength: 64
+          description: Idempotency key for this input event.
+        external_ticket_id:
+          type: string
+          maxLength: 64
+          nullable: true
+        external_message_id:
+          type: string
+          maxLength: 64
+        customer_id:
+          type: string
+          maxLength: 64
+          description: Immutable identity supplied by Java, never inferred by the model.
+        subject:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          maxLength: 5000
+        business_context:
+          type: object
+          additionalProperties: true
+          description: Read-only order, after-sale, refund, logistics, and policy snapshot.
+    TicketAgentResponse:
+      type: object
+      required:
+        - ticket_id
+        - trace_id
+        - status
+        - category
+        - route
+        - draft_response
+        - human_required
+        - classification_confidence
+      properties:
+        ticket_id:
+          type: string
+        trace_id:
+          type: string
+        status:
+          type: string
+          example: accepted
+        category:
+          type: string
+          example: logistics
+        route:
+          type: string
+          example: analysis_crew
+        draft_response:
+          type: string
+        final_response:
+          type: string
+          nullable: true
+          description: Null until Java or a human approves the draft.
+        human_required:
+          type: boolean
+        human_reason:
+          type: string
+          nullable: true
+        review_id:
+          type: string
+          nullable: true
+        classification_confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        validation_result:
+          nullable: true
+          oneOf:
+            - type: object
+            - type: array
+            - type: string

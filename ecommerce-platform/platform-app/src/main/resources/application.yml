@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: commerce-service
+  config:
+    import:
+      - optional:classpath:application-common.yml
+      - optional:file:../../.env[.properties]
+      - optional:file:../.env[.properties]
+      - optional:file:.env[.properties]
+
+server:
+  port: ${COMMERCE_SERVICE_PORT:8081}
+
+management:
+  metrics:
+    tags:
+      application: commerce-service

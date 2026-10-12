@@ -1,0 +1,223 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: "123456"
+          MYSQL_DATABASE: ecommerce
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -p --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli -a redis123 ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        command: redis-server --requirepass redis123
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Initialize MySQL schema
+        run: >-
+          docker exec -i ${{ job.services.mysql.id }} mysql
+          -uroot -p ecommerce
+          < ecommerce-platform/deploy/sql/init.sql
+
+      - name: Run backend tests
+        working-directory: ecommerce-platform
+        run: mvn -B test
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ecommerce-frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: ecommerce-frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: customer-ticket-copilot/pyproject.toml
+
+      - name: Test Python ticket copilot
+        working-directory: customer-ticket-copilot
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[test]"
+          python -m pytest -q
+
+  package:
+    name: Build and Publish Images
+    needs: validate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_prefix: ${{ steps.image-vars.outputs.image_prefix }}
+      image_tag: ${{ steps.image-vars.outputs.image_tag }}
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Package backend jars
+        working-directory: ecommerce-platform
+        run: mvn -B -DskipTests package
+
+      - name: Set image variables
+        id: image-vars
+        shell: bash
+        run: |
+          owner="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          repo="$(echo "${GITHUB_REPOSITORY#*/}" | tr '[:upper:]' '[:lower:]')"
+          prefix="ghcr.io/${owner}/${repo}"
+          tag="${GITHUB_SHA::12}"
+          echo "image_prefix=${prefix}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "COMMERCE_IMAGE=${prefix}/commerce-service:${tag}" >> "$GITHUB_ENV"
+          echo "AGENT_IMAGE=${prefix}/agent-service:${tag}" >> "$GITHUB_ENV"
+          echo "GATEWAY_IMAGE=${prefix}/gateway:${tag}" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build service images
+        run: |
+          docker compose \
+            -f ecommerce-platform/deploy/docker-compose.services.yml \
+            build commerce-service agent-service gateway
+
+      - name: Push service images
+        run: |
+          docker compose \
+            -f ecommerce-platform/deploy/docker-compose.services.yml \
+            push commerce-service agent-service gateway
+
+      - name: Publish latest tags
+        run: |
+          for service in commerce-service agent-service gateway; do
+            docker tag \
+              "${{ steps.image-vars.outputs.image_prefix }}/${service}:${{ steps.image-vars.outputs.image_tag }}" \
+              "${{ steps.image-vars.outputs.image_prefix }}/${service}:latest"
+            docker push \
+              "${{ steps.image-vars.outputs.image_prefix }}/${service}:latest"
+          done
+
+  deploy:
+    name: Deploy Production
+    needs: package
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy over SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          IMAGE_PREFIX: ${{ needs.package.outputs.image_prefix }}
+          IMAGE_TAG: ${{ needs.package.outputs.image_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -n "${DEPLOY_HOST}"
+          test -n "${DEPLOY_PORT}"
+          test -n "${DEPLOY_USER}"
+          test -n "${DEPLOY_SSH_KEY}"
+          test -n "${DEPLOY_PATH}"
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${DEPLOY_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${DEPLOY_PORT}" "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -p "${DEPLOY_PORT}" \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "set -e
+             cd '${DEPLOY_PATH}'
+             git fetch origin main
+             git checkout main
+             git pull --ff-only origin main
+             git submodule update --init --recursive
+             export COMMERCE_IMAGE='${IMAGE_PREFIX}/commerce-service:${IMAGE_TAG}'
+             export AGENT_IMAGE='${IMAGE_PREFIX}/agent-service:${IMAGE_TAG}'
+             export GATEWAY_IMAGE='${IMAGE_PREFIX}/gateway:${IMAGE_TAG}'
+             docker compose -f ecommerce-platform/deploy/docker-compose.services.yml pull commerce-service agent-service gateway
+             docker compose -f ecommerce-platform/deploy/docker-compose.services.yml up -d --no-build commerce-service agent-service gateway
+             sleep 15
+             curl -fsS http://127.0.0.1:8080/actuator/health"

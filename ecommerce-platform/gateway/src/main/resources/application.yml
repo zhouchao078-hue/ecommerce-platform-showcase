@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: gateway
+  config:
+    import:
+      - optional:file:../../.env[.properties]
+      - optional:file:../.env[.properties]
+      - optional:file:.env[.properties]
+  cloud:
+    gateway:
+      httpclient:
+        connect-timeout: 2000
+        response-timeout: 30s
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns:
+              - "*"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowed-headers:
+              - "*"
+            exposed-headers:
+              - Authorization
+            allow-credentials: true
+      routes:
+        - id: agent-service
+          uri: ${AGENT_SERVICE_URI:http://127.0.0.1:8082}
+          predicates:
+            - Path=/api/chat/**,/api/ticket-agent/**,/api/support/**,/api/internal/ticket-agent/**,/api/admin/agent/**
+        - id: commerce-service
+          uri: ${COMMERCE_SERVICE_URI:http://127.0.0.1:8081}
+          predicates:
+            - Path=/api/**
+
+server:
+  port: ${GATEWAY_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus,gateway
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: gateway
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

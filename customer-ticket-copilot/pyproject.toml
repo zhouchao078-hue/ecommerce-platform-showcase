@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "customer-ticket-copilot"
+version = "0.1.0"
+description = "Enterprise customer ticket analysis and reply copilot built with CrewAI"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "crewai==1.15.20",
+  "fastapi>=0.115,<1",
+  "pika>=1.3,<2",
+  "pydantic>=2.11.9,<2.13",
+  "python-dotenv>=1.2.2,<2",
+  "uvicorn>=0.34,<1",
+]
+
+[project.optional-dependencies]
+test = [
+  "httpx>=0.28,<1",
+  "pytest>=8,<9",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

@@ -1,0 +1,34 @@
+# ============================================================
+# 电商平台 - Git 忽略规则
+# ============================================================
+
+# Maven 构建产物
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+logs/
+deploy/.runtime/
+
+# Python 测试脚本缓存
+__pycache__/
+*.pyc
+
+# 本地环境配置
+*.local.properties
+.env
+.env.local

@@ -1,0 +1,78 @@
+name: ecommerce-services
+
+services:
+  commerce-service:
+    image: ${COMMERCE_IMAGE:-ecommerce-platform/commerce-service:local}
+    container_name: service-commerce
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.service
+      args:
+        JAR_FILE: platform-app/target/platform-app-1.0.0-SNAPSHOT.jar
+    env_file:
+      - path: ../../.env
+        required: false
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/ecommerce?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: host.docker.internal
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: host.docker.internal:9092
+      RABBITMQ_HOST: host.docker.internal
+      MINIO_ENDPOINT: http://host.docker.internal:9000
+    ports:
+      - "8081:8081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - services-net
+
+  agent-service:
+    image: ${AGENT_IMAGE:-ecommerce-platform/agent-service:local}
+    container_name: service-agent
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.service
+      args:
+        JAR_FILE: platform-services/platform-agent-service/target/platform-agent-service-1.0.0-SNAPSHOT.jar
+    env_file:
+      - path: ../../.env
+        required: false
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/ecommerce?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+      SPRING_DATA_REDIS_HOST: host.docker.internal
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: host.docker.internal:9092
+      RABBITMQ_HOST: host.docker.internal
+      MINIO_ENDPOINT: http://host.docker.internal:9000
+      AGENT_LOCAL_ENDPOINT: http://host.docker.internal:11434/api/chat
+      AGENT_TICKET_BASE_URL: http://host.docker.internal:8000
+    ports:
+      - "8082:8082"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - services-net
+
+  gateway:
+    image: ${GATEWAY_IMAGE:-ecommerce-platform/gateway:local}
+    container_name: service-gateway
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.service
+      args:
+        JAR_FILE: gateway/target/gateway-1.0.0-SNAPSHOT.jar
+    environment:
+      COMMERCE_SERVICE_URI: http://commerce-service:8081
+      AGENT_SERVICE_URI: http://agent-service:8082
+    ports:
+      - "8080:8080"
+    depends_on:
+      - commerce-service
+      - agent-service
+    networks:
+      - services-net
+
+networks:
+  services-net:
+    driver: bridge

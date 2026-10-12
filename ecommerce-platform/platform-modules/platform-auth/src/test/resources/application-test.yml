@@ -1,0 +1,28 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb-auth;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    username: sa
+    password:
+  sql:
+    init:
+      mode: embedded
+      schema-locations: classpath:schema-auth.sql
+      data-locations: classpath:data-auth.sql
+
+jwt:
+  secret: dGVzdC1zZWNyZXQta2V5LW1pbmltdW0tMjU2LWJpdHMtbG9uZyEh
+  access-token-expiration: 3600000
+  refresh-token-expiration: 86400000
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: test
+  secret-key: test
+
+logging:
+  level:
+    com.ecommerce: debug
