@@ -26,12 +26,12 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: "123456"
+          MYSQL_ROOT_PASSWORD: "ci-test-password"
           MYSQL_DATABASE: ecommerce
         ports:
           - 3306:3306
         options: >-
-          --health-cmd "mysqladmin ping -h 127.0.0.1 -p --silent"
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -pci-test-password --silent"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -60,10 +60,14 @@ jobs:
           cache: maven
 
       - name: Initialize MySQL schema
-        run: >-
-          docker exec -i ${{ job.services.mysql.id }} mysql
-          -uroot -p ecommerce
-          < ecommerce-platform/deploy/sql/init.sql
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker cp \
+            ecommerce-platform/deploy/sql/init.sql \
+            "${{ job.services.mysql.id }}:/tmp/init.sql"
+          docker exec "${{ job.services.mysql.id }}" sh -c \
+            'mysql -uroot -pci-test-password --default-character-set=utf8mb4 ecommerce < /tmp/init.sql'
 
       - name: Run backend tests
         working-directory: ecommerce-platform
