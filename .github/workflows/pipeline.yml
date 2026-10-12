@@ -71,6 +71,13 @@ jobs:
 
       - name: Run backend tests
         working-directory: ecommerce-platform
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/ecommerce?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: ci-test-password
+          SPRING_DATA_REDIS_HOST: 127.0.0.1
+          SPRING_DATA_REDIS_PORT: "6379"
+          SPRING_DATA_REDIS_PASSWORD: redis123
         run: mvn -B test
 
       - name: Set up Node.js
